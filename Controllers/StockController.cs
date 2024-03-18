@@ -24,6 +24,11 @@ namespace api.Controllers
         {
             var stocks = _context.Stocks.ToList();
 
+            if(stocks == null || stocks.Count == 0)
+            {
+                return NotFound();
+            }
+
             return Ok(stocks);
         }
 
