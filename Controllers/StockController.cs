@@ -1,4 +1,5 @@
 ﻿using api.Data;
+using api.Dtos.Stock;
 using api.Mappers;
 using api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +48,18 @@ namespace api.Controllers
             }
 
             return Ok(stock.ToStockDto());
+        }
+
+        [HttpPost]
+        public IActionResult Create([FromBody] CreateStockRequestDto StockDto)
+        {
+            // Receive a StockDto as a param from body and revert it to a Stock model
+            var StockModel = StockDto.ToStockFromCreateDto();
+            _context.Stocks.Add(StockModel);
+            _context.SaveChanges();
+            // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
+            // also convert the model to a DTO
+            return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
         }
     }
 }
