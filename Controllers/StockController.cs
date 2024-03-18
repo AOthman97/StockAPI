@@ -1,4 +1,5 @@
 ﻿using api.Data;
+using api.Mappers;
 using api.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,9 +23,12 @@ namespace api.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var stocks = _context.Stocks.ToList();
+            // We need to use the .Select BECAUSE we're iterating through a list of items, If we were to
+            // have a single stock we could've directly used the .ToStockDto without the .Select
+            var stocks = _context.Stocks.ToList()
+                        .Select(s => s.ToStockDto());
 
-            if(stocks == null || stocks.Count == 0)
+            if(stocks == null)
             {
                 return NotFound();
             }
