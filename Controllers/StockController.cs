@@ -51,11 +51,36 @@ namespace api.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] CreateStockRequestDto StockDto)
+        public IActionResult Create([FromBody] CreateStockRequestDto AddDto)
         {
             // Receive a StockDto as a param from body and revert it to a Stock model
-            var StockModel = StockDto.ToStockFromCreateDto();
+            var StockModel = AddDto.ToStockFromCreateDto();
             _context.Stocks.Add(StockModel);
+            _context.SaveChanges();
+            // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
+            // also convert the model to a DTO
+            return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
+        }
+
+        [HttpPut]
+        [Route("{id}")]
+        public IActionResult Update([FromRoute] int id, [FromBody] UpdateStockRequestDto UpdateDto)
+        {
+            var StockModel = _context.Stocks.FirstOrDefault(x => x.Id == id);
+
+            if(StockModel == null)
+            {
+                return NotFound();
+            }
+
+            StockModel.Purchase = UpdateDto.Purchase;
+            StockModel.Symbol = UpdateDto.Symbol;
+            StockModel.MarketCap = UpdateDto.MarketCap;
+            StockModel.CompanyName = UpdateDto.CompanyName;
+            StockModel.LastDiv = UpdateDto.LastDiv;
+            StockModel.Industry = UpdateDto.Industry;
+
+            //_context.Stocks.Update(StockModel);
             _context.SaveChanges();
             // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
             // also convert the model to a DTO
