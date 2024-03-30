@@ -86,5 +86,21 @@ namespace api.Controllers
             // also convert the model to a DTO
             return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
         }
+
+        [HttpDelete]
+        [Route("{id}")]
+        public IActionResult Delete([FromRoute] int id)
+        {
+            var stockModel = _context.Stocks.FirstOrDefault(y => y.Id == id);
+
+            if (stockModel == null)
+            {
+                return NotFound();
+            }
+
+            _context.Stocks.Remove(stockModel);
+            _context.SaveChanges();
+            return NoContent();
+        }
     }
 }
