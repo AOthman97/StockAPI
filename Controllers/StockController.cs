@@ -3,6 +3,7 @@ using api.Dtos.Stock;
 using api.Mappers;
 using api.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace api.Controllers
 {
@@ -22,25 +23,26 @@ namespace api.Controllers
         //}
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
             // We need to use the .Select BECAUSE we're iterating through a list of items, If we were to
             // have a single stock we could've directly used the .ToStockDto without the .Select
-            var stocks = _context.Stocks.ToList()
-                        .Select(s => s.ToStockDto());
+            var stocks = await _context.Stocks.ToListAsync();
 
-            if(stocks == null)
+            if (stocks == null || stocks.Count == 0)
             {
                 return NotFound();
             }
 
-            return Ok(stocks);
+            var stockDto = stocks.Select(s => s.ToStockDto());
+
+            return Ok(stockDto);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById([FromRoute] int id) 
+        public async Task<IActionResult> GetById([FromRoute] int id) 
         {
-            var stock = _context.Stocks.Find(id);
+            var stock = await _context.Stocks.FindAsync(id);
 
             if(stock == null)
             {
@@ -51,12 +53,12 @@ namespace api.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] CreateStockRequestDto AddDto)
+        public async Task<IActionResult> Create([FromBody] CreateStockRequestDto AddDto)
         {
             // Receive a StockDto as a param from body and revert it to a Stock model
             var StockModel = AddDto.ToStockFromCreateDto();
-            _context.Stocks.Add(StockModel);
-            _context.SaveChanges();
+            await _context.Stocks.AddAsync(StockModel);
+            await _context.SaveChangesAsync();
             // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
             // also convert the model to a DTO
             return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
@@ -64,9 +66,9 @@ namespace api.Controllers
 
         [HttpPut]
         [Route("{id}")]
-        public IActionResult Update([FromRoute] int id, [FromBody] UpdateStockRequestDto UpdateDto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStockRequestDto UpdateDto)
         {
-            var StockModel = _context.Stocks.FirstOrDefault(x => x.Id == id);
+            var StockModel = await _context.Stocks.FirstOrDefaultAsync(x => x.Id == id);
 
             if(StockModel == null)
             {
@@ -81,7 +83,7 @@ namespace api.Controllers
             StockModel.Industry = UpdateDto.Industry;
 
             //_context.Stocks.Update(StockModel);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
             // also convert the model to a DTO
             return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
@@ -89,9 +91,9 @@ namespace api.Controllers
 
         [HttpDelete]
         [Route("{id}")]
-        public IActionResult Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var stockModel = _context.Stocks.FirstOrDefault(y => y.Id == id);
+            var stockModel = await _context.Stocks.FirstOrDefaultAsync(y => y.Id == id);
 
             if (stockModel == null)
             {
@@ -99,7 +101,7 @@ namespace api.Controllers
             }
 
             _context.Stocks.Remove(stockModel);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return NoContent();
         }
     }
