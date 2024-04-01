@@ -1,7 +1,7 @@
 ﻿using api.Data;
 using api.Dtos.Stock;
+using api.Interfaces;
 using api.Mappers;
-using api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,9 +9,10 @@ namespace api.Controllers
 {
     [Route("api/stock")]
     [ApiController]
-    public class StockController(ApplicationDBContext context) : ControllerBase
+    public class StockController(ApplicationDBContext context, IStockRepository stockRepository) : ControllerBase
     {
         private readonly ApplicationDBContext _context = context;
+        private readonly IStockRepository _stockRepository = stockRepository;
 
         // Advanced feature, New null checking without actually checking for nulls each time in code
         //public class NullStock : Stock
@@ -27,7 +28,7 @@ namespace api.Controllers
         {
             // We need to use the .Select BECAUSE we're iterating through a list of items, If we were to
             // have a single stock we could've directly used the .ToStockDto without the .Select
-            var stocks = await _context.Stocks.ToListAsync();
+            var stocks = await _stockRepository.GetAllAsync();
 
             if (stocks == null || stocks.Count == 0)
             {
@@ -42,7 +43,7 @@ namespace api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id) 
         {
-            var stock = await _context.Stocks.FindAsync(id);
+            var stock = await _stockRepository.GetByIdAsync(id);
 
             if(stock == null)
             {
@@ -57,8 +58,7 @@ namespace api.Controllers
         {
             // Receive a StockDto as a param from body and revert it to a Stock model
             var StockModel = AddDto.ToStockFromCreateDto();
-            await _context.Stocks.AddAsync(StockModel);
-            await _context.SaveChangesAsync();
+            await _stockRepository.CreateAsync(StockModel);
             // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
             // also convert the model to a DTO
             return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
@@ -68,41 +68,29 @@ namespace api.Controllers
         [Route("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStockRequestDto UpdateDto)
         {
-            var StockModel = await _context.Stocks.FirstOrDefaultAsync(x => x.Id == id);
+            var StockModel = await _stockRepository.UpdateAsync(id, UpdateDto);
 
-            if(StockModel == null)
+            if(StockModel != null)
             {
-                return NotFound();
+                // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
+                // also convert the model to a DTO
+                return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
             }
-
-            StockModel.Purchase = UpdateDto.Purchase;
-            StockModel.Symbol = UpdateDto.Symbol;
-            StockModel.MarketCap = UpdateDto.MarketCap;
-            StockModel.CompanyName = UpdateDto.CompanyName;
-            StockModel.LastDiv = UpdateDto.LastDiv;
-            StockModel.Industry = UpdateDto.Industry;
-
-            //_context.Stocks.Update(StockModel);
-            await _context.SaveChangesAsync();
-            // After successful save, this will call the "GetById" method and pass-in the newly created stock's Id and
-            // also convert the model to a DTO
-            return CreatedAtAction(nameof(GetById), new { id = StockModel.Id }, StockModel.ToStockDto());
+            else return NotFound();
         }
 
         [HttpDelete]
         [Route("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var stockModel = await _context.Stocks.FirstOrDefaultAsync(y => y.Id == id);
+            var StockModel = await _stockRepository.DeleteAsync(id);
 
-            if (stockModel == null)
+            if (StockModel == null)
             {
                 return NotFound();
             }
 
-            _context.Stocks.Remove(stockModel);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            else return NoContent();
         }
     }
 }
