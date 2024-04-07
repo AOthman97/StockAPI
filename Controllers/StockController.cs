@@ -1,4 +1,5 @@
 ﻿using api.Dtos.Stock;
+using api.Helpers;
 using api.Interfaces;
 using api.Models;
 using Mapster;
@@ -15,11 +16,14 @@ namespace api.Controllers
         private readonly IMapper _mapper = mapper;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] StockQueryObjects query)
         {
+            if(!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             // We need to use the .Select BECAUSE we're iterating through a list of items, If we were to
             // have a single stock we could've directly used the .ToStockDto without the .Select
-            var stocks = await _stockRepository.GetAllAsync();
+            var stocks = await _stockRepository.GetAllAsync(query);
 
             if (stocks == null || stocks.Count == 0)
             {
