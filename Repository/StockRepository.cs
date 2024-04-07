@@ -1,5 +1,6 @@
 ﻿using api.Data;
 using api.Dtos.Stock;
+using api.Helpers;
 using api.Interfaces;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -10,9 +11,25 @@ namespace api.Repository
     {
         private readonly ApplicationDBContext _context = context;
 
-        public async Task<List<Stock>> GetAllAsync()
+        public async Task<List<Stock>> GetAllAsync(StockQueryObjects query)
         {
-            return await _context.Stocks.Include(c => c.Comments).ToListAsync();
+            //return await _context.Stocks.Include(c => c.Comments).ToListAsync();
+
+            // By using the query object we can add additional logic or filtering for our sql statements based on the
+            // query params that are received
+            var stocks = _context.Stocks.Include(c => c.Comments).AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(query.CompanyName))
+            {
+                stocks = stocks.Where(c => c.CompanyName.Contains(query.CompanyName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Sybmol))
+            {
+                stocks = stocks.Where(s => s.Symbol.Contains(query.Sybmol));
+            }
+
+            return await stocks.ToListAsync();
         }
 
         public async Task<Stock?> GetByIdAsync(int id)
