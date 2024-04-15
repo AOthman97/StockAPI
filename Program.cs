@@ -3,6 +3,7 @@ using api.Interfaces;
 using api.Mapper;
 using api.Models;
 using api.Repository;
+using api.Services;
 using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -61,8 +62,10 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Add services
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddMapster();
 MapsterConfig.Configure();

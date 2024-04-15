@@ -1,4 +1,5 @@
 ﻿using api.Dtos.Account;
+using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -12,13 +13,15 @@ namespace api.Controllers
     public class AccountController : ControllerBase
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly ITokenService _tokenService;
 
-        public AccountController(UserManager<AppUser> userManager)
+        public AccountController(UserManager<AppUser> userManager, ITokenService tokenService)
         {
             _userManager = userManager;
+            _tokenService = tokenService;
         }
 
-        [HttpPost]
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
             try
@@ -40,7 +43,14 @@ namespace api.Controllers
 
                     if (roleResult.Succeeded)
                     {
-                        return Ok("User Created!");
+                        return Ok(
+                                new NewUserDto
+                                {
+                                    Email = appUser.Email,
+                                    Username = appUser.UserName,
+                                    Token = _tokenService.CreateToken(appUser)
+                                }
+                            );
                     }
                     else
                         return StatusCode(500, roleResult.Errors);
