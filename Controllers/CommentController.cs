@@ -1,16 +1,15 @@
 ﻿using api.Dtos.Comment;
-using api.Dtos.Stock;
 using api.Interfaces;
-using api.Mappers;
 using api.Models;
-using api.Repository;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
 {
     [Route("api/comment")]
     [ApiController]
+    [Authorize]
     public class CommentController(ICommentRepository commentRepository,
         IStockRepository stockRepository,
         IMapper mapper) : ControllerBase
@@ -19,7 +18,7 @@ namespace api.Controllers
         private readonly IStockRepository _stockRepository = stockRepository;
         private readonly IMapper _mapper = mapper;
 
-        [HttpGet]
+        [HttpGet("getall")]
         public async Task<IActionResult> GetAll()
         {
             var comments = await _commentRepository.GetAllAsync();
