@@ -2,20 +2,21 @@
 using api.Helpers;
 using api.Interfaces;
 using api.Models;
-using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
 {
     [Route("api/stock")]
     [ApiController]
+    [Authorize]
     public class StockController(IStockRepository stockRepository, IMapper mapper) : ControllerBase
     {
         private readonly IStockRepository _stockRepository = stockRepository;
         private readonly IMapper _mapper = mapper;
 
-        [HttpGet]
+        [HttpGet("getall")]
         public async Task<IActionResult> GetAll([FromQuery] StockQueryObjects query)
         {
             if(!ModelState.IsValid)

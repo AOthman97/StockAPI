@@ -1,24 +1,57 @@
 ﻿using api.Dtos.Account;
 using api.Interfaces;
 using api.Models;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Rewrite;
+using Microsoft.EntityFrameworkCore;
 
 namespace api.Controllers
 {
     [Route("api/account")]
     [ApiController]
-    public class AccountController : ControllerBase
+    public class AccountController(UserManager<AppUser> userManager, ITokenService tokenService,
+        SignInManager<AppUser> signInManager) : ControllerBase
     {
-        private readonly UserManager<AppUser> _userManager;
-        private readonly ITokenService _tokenService;
+        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly ITokenService _tokenService = tokenService;
+        private readonly SignInManager<AppUser> _signInManager = signInManager;
 
-        public AccountController(UserManager<AppUser> userManager, ITokenService tokenService)
+        private OkObjectResult UserInfo(AppUser? user)
         {
-            _userManager = userManager;
-            _tokenService = tokenService;
+            return Ok(
+                new NewUserDto
+                {
+                    Email = user.Email,
+                    Username = user.UserName,
+                    Token = _tokenService.CreateToken(user)
+                });
+        }
+
+        private UnauthorizedObjectResult UnAuthorized() => Unauthorized("Invalid Username/Password!");
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var user = await _userManager.Users.FirstOrDefaultAsync(x => x.UserName == loginDto.Username.ToLower());
+
+                if (user == null) return UnAuthorized();
+
+                var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
+
+                if (!result.Succeeded) return UnAuthorized();
+
+                return UserInfo(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex);
+            }
         }
 
         [HttpPost("register")]
@@ -26,7 +59,7 @@ namespace api.Controllers
         {
             try
             {
-                if(!ModelState.IsValid)
+                if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
                 var appUser = new AppUser
@@ -43,14 +76,7 @@ namespace api.Controllers
 
                     if (roleResult.Succeeded)
                     {
-                        return Ok(
-                                new NewUserDto
-                                {
-                                    Email = appUser.Email,
-                                    Username = appUser.UserName,
-                                    Token = _tokenService.CreateToken(appUser)
-                                }
-                            );
+                        return UserInfo(appUser);
                     }
                     else
                         return StatusCode(500, roleResult.Errors);
