@@ -1,4 +1,5 @@
-﻿using api.Extensions;
+﻿using api.Dtos.Stock;
+using api.Extensions;
 using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -30,6 +31,40 @@ namespace api.Controllers
             var userPortfolio = await _portfolioRepository.GetUserPortfolio(appUser);
 
             return Ok(userPortfolio);
+        }
+
+        [HttpPost("CreateUserPortfolio")]
+        public async Task<IActionResult> CreateUserPortfolio(string symbol)
+        {
+            var username = User.GetUsername();
+
+            var appUser = await _userManager.FindByNameAsync(username);
+
+            var stock = await _stockRepository.GetBySymbolAsync(symbol);
+
+            if (appUser == null)
+                return StatusCode(404, "No User Found!");
+            if (stock == null)
+                return StatusCode(404, "No Stock Found!");
+
+
+            var userPortfolio = await _portfolioRepository.GetUserPortfolio(appUser);
+
+            if (userPortfolio.Any(u => u.Symbol.ToLower() == symbol.ToLower()))
+                return BadRequest("Cannot add same stock with user to Portfolio!");
+
+            var portfolioModel = new Portfolio
+            {
+                AppUserId = appUser.Id,
+                StockId = stock.Id
+            };
+
+            await _portfolioRepository.CreateAsync(portfolioModel);
+
+            if(portfolioModel == null)
+                return StatusCode(500, "Create Failed!");
+            else
+                return Created();
         }
     }
 }
