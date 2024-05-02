@@ -32,6 +32,8 @@ namespace api.Controllers
 
             return Ok(userPortfolio);
 
+
+
         }
 
         [HttpPost("CreateUserPortfolio")]
