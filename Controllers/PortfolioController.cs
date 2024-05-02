@@ -37,7 +37,7 @@ namespace api.Controllers
         }
 
         [HttpPost("CreateUserPortfolio")]
-        public async Task<IActionResult> CreateUserPortfolio(string symbol)
+        public async Task<IActionResult> createblah(string symbol)
         {
             var username = User.GetUsername();
 
