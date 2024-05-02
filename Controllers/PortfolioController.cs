@@ -31,6 +31,7 @@ namespace api.Controllers
             var userPortfolio = await _portfolioRepository.GetUserPortfolio(appUser);
 
             return Ok(userPortfolio);
+
         }
 
         [HttpPost("CreateUserPortfolio")]
